@@ -46,7 +46,7 @@ YELLOW = (255, 255, 0)
 ## to placed in "__init__.py" later
 ## initialize pygame and create window
 pygame.init()
-pygame.mixer.init()  ## For sound
+# pygame.mixer.init()  ## For sound
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Space Shooter")
 clock = pygame.time.Clock()     ## For syncing the FPS
@@ -57,8 +57,8 @@ font_name = pygame.font.match_font('arial')
 def main_menu():
     global screen
 
-    menu_song = pygame.mixer.music.load(path.join(sound_folder, "menu.ogg"))
-    pygame.mixer.music.play(-1)
+    # menu_song = pygame.mixer.music.load(path.join(sound_folder, "menu.ogg"))
+    # pygame.mixer.music.play(-1)
 
     title = pygame.image.load(path.join(img_dir, "main.png")).convert()
     title = pygame.transform.scale(title, (WIDTH, HEIGHT), screen)
@@ -66,25 +66,28 @@ def main_menu():
     screen.blit(title, (0,0))
     pygame.display.update()
 
-    while True:
-        ev = pygame.event.poll()
-        if ev.type == pygame.KEYDOWN:
-            if ev.key == pygame.K_RETURN:
-                break
-            elif ev.key == pygame.K_q:
-                pygame.quit()
-                quit()
-        elif ev.type == pygame.QUIT:
-                pygame.quit()
-                quit() 
-        else:
-            draw_text(screen, "Press [ENTER] To Begin", 30, WIDTH/2, HEIGHT/2)
-            draw_text(screen, "or [Q] To Quit", 30, WIDTH/2, (HEIGHT/2)+40)
-            pygame.display.update()
+    ev = pygame.event.poll()
+
+    # Disable game intro
+
+    # while True:
+    #     if ev.type == pygame.KEYDOWN:
+    #         if ev.key == pygame.K_RETURN:
+    #             break
+    #         elif ev.key == pygame.K_q:
+    #             pygame.quit()
+    #             quit()
+    #     elif ev.type == pygame.QUIT:
+    #             pygame.quit()
+    #             quit() 
+    #     else:
+    #         draw_text(screen, "Press [ENTER] To Begin", 30, WIDTH/2, HEIGHT/2)
+    #         draw_text(screen, "or [Q] To Quit", 30, WIDTH/2, (HEIGHT/2)+40)
+    #         pygame.display.update()
 
     #pygame.mixer.music.stop()
-    ready = pygame.mixer.Sound(path.join(sound_folder,'getready.ogg'))
-    ready.play()
+    # ready = pygame.mixer.Sound(path.join(sound_folder,'getready.ogg'))
+    # ready.play()
     screen.fill(BLACK)
     draw_text(screen, "GET READY!", 40, WIDTH/2, HEIGHT/2)
     pygame.display.update()
@@ -162,11 +165,11 @@ class Player(pygame.sprite.Sprite):
         self.radius = 20
         self.rect.centerx = WIDTH / 2
         self.rect.bottom = HEIGHT - 10
-        self.speedx = 0 
+        self.speedx = 0
         self.shield = 100
         self.shoot_delay = 250
         self.last_shot = pygame.time.get_ticks()
-        self.lives = 3
+        self.lives = 1
         self.hidden = False
         self.hide_timer = pygame.time.get_ticks()
         self.power = 1
@@ -184,7 +187,7 @@ class Player(pygame.sprite.Sprite):
             self.rect.centerx = WIDTH / 2
             self.rect.bottom = HEIGHT - 30
 
-        self.speedx = 0     ## makes the player static in the screen by default. 
+        self.speedx = 0    ## makes the player static in the screen by default. 
         # then we have to check whether there is an event hanlding being done for the arrow keys being 
         ## pressed 
 
@@ -196,7 +199,10 @@ class Player(pygame.sprite.Sprite):
             self.speedx = 5
 
         #Fire weapons by holding spacebar
-        if keystate[pygame.K_SPACE]:
+
+        #  Add autofire
+        # if keystate[pygame.K_SPACE]:
+        if keystate:
             self.shoot()
 
         ## check for the borders at the left and right
@@ -216,7 +222,7 @@ class Player(pygame.sprite.Sprite):
                 bullet = Bullet(self.rect.centerx, self.rect.top)
                 all_sprites.add(bullet)
                 bullets.add(bullet)
-                shooting_sound.play()
+                # shooting_sound.play()
             if self.power == 2:
                 bullet1 = Bullet(self.rect.left, self.rect.centery)
                 bullet2 = Bullet(self.rect.right, self.rect.centery)
@@ -224,7 +230,7 @@ class Player(pygame.sprite.Sprite):
                 all_sprites.add(bullet2)
                 bullets.add(bullet1)
                 bullets.add(bullet2)
-                shooting_sound.play()
+                # shooting_sound.play()
 
             """ MOAR POWAH """
             if self.power >= 3:
@@ -237,8 +243,8 @@ class Player(pygame.sprite.Sprite):
                 bullets.add(bullet1)
                 bullets.add(bullet2)
                 bullets.add(missile1)
-                shooting_sound.play()
-                missile_sound.play()
+                # shooting_sound.play()
+                # missile_sound.play()
 
     def powerup(self):
         self.power += 1
@@ -358,8 +364,8 @@ class Missile(pygame.sprite.Sprite):
 ###################################################
 ## Load all game images
 
-background = pygame.image.load(path.join(img_dir, 'starfield.png')).convert()
-background_rect = background.get_rect()
+# background = pygame.image.load(path.join(img_dir, 'starfield.png')).convert()
+# background_rect = background.get_rect()
 ## ^^ draw this rect first 
 
 player_img = pygame.image.load(path.join(img_dir, 'playerShip1_orange.png')).convert()
@@ -382,7 +388,7 @@ meteor_list = [
 for image in meteor_list:
     meteor_images.append(pygame.image.load(path.join(img_dir, image)).convert())
 
-## meteor explosion
+# meteor explosion
 explosion_anim = {}
 explosion_anim['lg'] = []
 explosion_anim['sm'] = []
@@ -414,16 +420,16 @@ powerup_images['gun'] = pygame.image.load(path.join(img_dir, 'bolt_gold.png')).c
 
 ###################################################
 ### Load all game sounds
-shooting_sound = pygame.mixer.Sound(path.join(sound_folder, 'pew.wav'))
-missile_sound = pygame.mixer.Sound(path.join(sound_folder, 'rocket.ogg'))
-expl_sounds = []
-for sound in ['expl3.wav', 'expl6.wav']:
-    expl_sounds.append(pygame.mixer.Sound(path.join(sound_folder, sound)))
-## main background music
-#pygame.mixer.music.load(path.join(sound_folder, 'tgfcoder-FrozenJam-SeamlessLoop.ogg'))
-pygame.mixer.music.set_volume(0.2)      ## simmered the sound down a little
+# shooting_sound = pygame.mixer.Sound(path.join(sound_folder, 'pew.wav'))
+# missile_sound = pygame.mixer.Sound(path.join(sound_folder, 'rocket.ogg'))
+# expl_sounds = []
+# for sound in ['expl3.wav', 'expl6.wav']:
+#     expl_sounds.append(pygame.mixer.Sound(path.join(sound_folder, sound)))
+# ## main background music
+# #pygame.mixer.music.load(path.join(sound_folder, 'tgfcoder-FrozenJam-SeamlessLoop.ogg'))
+# pygame.mixer.music.set_volume(0.2)      ## simmered the sound down a little
 
-player_die_sound = pygame.mixer.Sound(path.join(sound_folder, 'rumble1.ogg'))
+# player_die_sound = pygame.mixer.Sound(path.join(sound_folder, 'rumble1.ogg'))
 ###################################################
 
 ## TODO: make the game music loop over again and again. play(loops=-1) is not working
@@ -432,19 +438,42 @@ player_die_sound = pygame.mixer.Sound(path.join(sound_folder, 'rumble1.ogg'))
 #pygame.mixer.music.play()
 
 #############################
+
+# Utility functions
+def count_items_in_rect(rect, items):
+        count = 0
+        for item in items:
+            if rect.colliderect(item):
+                count += 1
+        return count
+
+
+def draw_rect_text(screen, text, position, color=WHITE):
+    """Draw text on the screen."""
+    font = pygame.font.Font(None, 36)
+    text_surface = font.render(text, True, color)
+    screen.blit(text_surface, position)
+
+
+
+
+
+
+
+
 ## Game loop
 running = True
 menu_display = True
 while running:
     if menu_display:
         main_menu()
-        pygame.time.wait(3000)
+        pygame.time.wait(1000)
 
         #Stop menu music
-        pygame.mixer.music.stop()
-        #Play the gameplay music
-        pygame.mixer.music.load(path.join(sound_folder, 'tgfcoder-FrozenJam-SeamlessLoop.ogg'))
-        pygame.mixer.music.play(-1)     ## makes the gameplay sound in an endless loop
+        # pygame.mixer.music.stop()
+        # #Play the gameplay music
+        # pygame.mixer.music.load(path.join(sound_folder, 'tgfcoder-FrozenJam-SeamlessLoop.ogg'))
+        # pygame.mixer.music.play(-1)     ## makes the gameplay sound in an endless loop
         
         menu_display = False
         
@@ -479,10 +508,10 @@ while running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 running = False
-        # ## event for shooting the bullets
-        # elif event.type == pygame.KEYDOWN:
-        #     if event.key == pygame.K_SPACE:
-        #         player.shoot()      ## we have to define the shoot()  function
+        ## event for shooting the bullets
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                player.shoot()      ## we have to define the shoot()  function
 
     #2 Update
     all_sprites.update()
@@ -495,17 +524,17 @@ while running:
     ## as there will be no mob_elements left out 
     for hit in hits:
         score += 50 - hit.radius         ## give different scores for hitting big and small metoers
-        random.choice(expl_sounds).play()
-        # m = Mob()
-        # all_sprites.add(m)
-        # mobs.add(m)
+        # random.choice(expl_sounds).play()
+        m = Mob()
+        all_sprites.add(m)
+        mobs.add(m)
         expl = Explosion(hit.rect.center, 'lg')
         all_sprites.add(expl)
         if random.random() > 0.9:
             pow = Pow(hit.rect.center)
             all_sprites.add(pow)
             powerups.add(pow)
-        newmob()        ## spawn a new mob
+        # newmob()        ## spawn a new mob
 
     ## ^^ the above loop will create the amount of mob objects which were killed spawn again
     #########################
@@ -518,10 +547,10 @@ while running:
         all_sprites.add(expl)
         newmob()
         if player.shield <= 0: 
-            player_die_sound.play()
+            # player_die_sound.play()
             death_explosion = Explosion(player.rect.center, 'player')
             all_sprites.add(death_explosion)
-            # running = False     ## GAME OVER 3:D
+            # running = False     ## GbackgrounAME OVER 3:D
             player.hide()
             player.lives -= 1
             player.shield = 100
@@ -537,15 +566,15 @@ while running:
             player.powerup()
 
     ## if player died and the explosion has finished, end game
-    if player.lives == 0 and not death_explosion.alive():
-        running = False
+    # if player.lives == 0 and not death_explosion.alive():
+        # running = False
         # menu_display = True
         # pygame.display.update()
 
     #3 Draw/render
     screen.fill(BLACK)
     ## draw the stargaze.png image
-    screen.blit(background, background_rect)
+    # screen.blit(background, background_rect)
 
     all_sprites.draw(screen)
     draw_text(screen, str(score), 18, WIDTH / 2, 10)     ## 10px down from the screen
@@ -554,7 +583,48 @@ while running:
     # Draw lives
     draw_lives(screen, WIDTH - 100, 5, player.lives, player_mini_img)
 
+
+
+
+    # Add zones to calculate mobs
+    # Zone widths
+    zone_width = 50
+
+    middle_rect = pygame.Rect(player.rect.x, 0, zone_width, HEIGHT)
+    right_rect = pygame.Rect(player.rect.x + zone_width, 0, WIDTH - player.rect.x - zone_width, HEIGHT)
+    left_rect = pygame.Rect(0, 0, WIDTH - (WIDTH - player.rect.x), HEIGHT)
+
+    pygame.draw.rect(screen, (100, 100, 100), middle_rect, 1)
+    pygame.draw.rect(screen, (100, 100, 100), right_rect, 1)
+    pygame.draw.rect(screen, (100, 100, 100), left_rect, 1)
+
+
+    left_mob_count = count_items_in_rect(left_rect, mobs)
+    middle_mob_count = count_items_in_rect(middle_rect, mobs)
+    right_mob_count = count_items_in_rect(right_rect, mobs)
+
+    left_powerup_count = count_items_in_rect(left_rect, powerups)
+    middle_powerup_count = count_items_in_rect(middle_rect, powerups)
+    right_powerup_count = count_items_in_rect(right_rect, powerups)
+
+    draw_rect_text(screen, str(left_mob_count), (10, HEIGHT // 2 ), color=RED)
+    draw_rect_text(screen, str(middle_mob_count), (middle_rect.x + 10, HEIGHT // 2), color=RED)
+    draw_rect_text(screen, str(right_mob_count), (right_rect.x + 10, HEIGHT // 2), color=RED)
+
+
+    draw_rect_text(screen, str(left_powerup_count), (10, HEIGHT // 2 - 40), color=GREEN)
+    draw_rect_text(screen, str(middle_powerup_count), (middle_rect.x + 10, HEIGHT // 2 - 40), color=GREEN)
+    draw_rect_text(screen, str(right_powerup_count), (right_rect.x + 10, HEIGHT // 2 - 40), color=GREEN)
+    # draw_text(screen, f'Goods: {left_good_count}', (10, 40))
+    # draw_text(screen, f'Mobs: {middle_mob_count}', (middle_rect.x + 10, middle_rect.y + 10))
+    # # draw_text(screen, f'Goods: {middle_good_count}', (middle_rect.x + 10, middle_rect.y + 40))
+    # draw_text(screen, f'Mobs: {right_mob_count}', (right_rect.x + 10, right_rect.y + 10))
+    # draw_text(screen, f'Goods: {right_good_count}', (right_rect.x + 10, right_rect.y + 40))
+
+
     ## Done after drawing everything to the screen
-    pygame.display.flip()       
+    pygame.display.flip()  
+
+
 
 pygame.quit()
