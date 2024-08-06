@@ -2,14 +2,6 @@ import pygame
 from . import constants
 from os import path
 
-# img_dir = path.join(path.dirname(__file__), 'assets')
-# player_img = pygame.image.load(path.join(img_dir, 'playerShip1_orange.png')).convert()
-# player_mini_img = pygame.transform.scale(player_img, (25, 19))
-# player_mini_img.set_colorkey(constants.BLACK)
-# bullet_img = pygame.image.load(path.join(img_dir, 'laserRed16.png')).convert()
-# missile_img = pygame.image.load(path.join(img_dir, 'missile.png')).convert_alpha()
-
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, all_sprites, bullets, player_image, bullet_image, missle_image):
         pygame.sprite.Sprite.__init__(self)
@@ -33,6 +25,9 @@ class Player(pygame.sprite.Sprite):
         self.power = 1
         self.power_timer = pygame.time.get_ticks()
 
+        self.move_delay = 500
+        self.last_move = pygame.time.get_ticks()
+
         self.all_sprites = all_sprites
         self.bullets = bullets
 
@@ -55,9 +50,9 @@ class Player(pygame.sprite.Sprite):
         ## will give back a list of the keys which happen to be pressed down at that moment
         keystate = pygame.key.get_pressed()     
         if keystate[pygame.K_LEFT]:
-            self.speedx = -5
+            self.move(-1)
         elif keystate[pygame.K_RIGHT]:
-            self.speedx = 5
+            self.move(1)
 
         #Fire weapons by holding spacebar
 
@@ -111,6 +106,11 @@ class Player(pygame.sprite.Sprite):
         self.hidden = True
         self.hide_timer = pygame.time.get_ticks()
         self.rect.center = (constants.WIDTH / 2, constants.HEIGHT + 200)
+
+    def move(self, direction):
+        now = pygame.time.get_ticks()
+        if now - self.last_move > self.move_delay:
+            self.rect.centerx += direction * 5
 
 
 ## defines the sprite for bullets

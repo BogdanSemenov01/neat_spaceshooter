@@ -3,6 +3,7 @@ import pygame
 from pygame._sdl2.video import Window
 import random
 from os import path
+import numpy as np
 
 
 from . import constants
@@ -11,6 +12,10 @@ from .Mob import *
 from .Utils import *
 
 img_dir = path.join(path.dirname(__file__), 'assets')
+
+def sigmoid(x):
+    sigmoid = 1.0/(1.0 + np.exp(-x))
+    return sigmoid 
 
 class SpaceShooterGame:
     def __init__(self, title, nn):
@@ -22,10 +27,14 @@ class SpaceShooterGame:
         self.screen = None
         self.pause = True
 
+        self.nn = nn
+
         self.img_dir = path.join(path.dirname(__file__), 'assets')
         self.sound_folder = path.join(path.dirname(__file__), 'sounds')
 
         self.font_name = pygame.font.match_font('arial')
+
+        self.player = None
 
         self.img_dir = path.join(path.dirname(__file__), 'assets')
         self.player_img = pygame.image.load(path.join(img_dir, 'playerShip1_orange.png'))
@@ -33,6 +42,9 @@ class SpaceShooterGame:
         self.player_mini_img.set_colorkey(constants.BLACK)
         self.bullet_img = pygame.image.load(path.join(img_dir, 'laserRed16.png'))
         self.missile_img = pygame.image.load(path.join(img_dir, 'missile.png'))
+
+        self.previous_steps = []
+        self.regularization = 0.5
 
         
     def init_explosion_anim(self):
@@ -122,9 +134,12 @@ class SpaceShooterGame:
         minutes = elapsed_seconds // 60
         seconds = elapsed_seconds % 60
 
+        self.result *= seconds // 10000
+
         self.screen.fill(constants.BLACK)
         self.draw_text("GAME OVER!", 40, constants.WIDTH/2, constants.HEIGHT/2)
         self.draw_text(f'Time: {minutes:02}:{seconds:02}'.upper(), 40, constants.WIDTH/2, constants.HEIGHT/2 + 40)
+        
         pygame.display.update()
     
     def set_pause(self):
@@ -134,6 +149,20 @@ class SpaceShooterGame:
 
     def stop_pause(self):
         self.pause = False
+    
+    def make_move(self, predict):
+
+        if predict[0] > random.random():
+           decision = 1
+        else:
+           decision = -1
+
+        self.player.move(decision)
+        
+        if 50 < self.player.rect.centerx < 430:
+            self.result += 10
+        else:
+            self.result += 0.1
 
     def run_game(self):
         
@@ -159,13 +188,14 @@ class SpaceShooterGame:
         powerups = pygame.sprite.Group()
         mobs = pygame.sprite.Group()
         player = Player(all_sprites=all_sprites, bullets=bullets, player_image=self.player_img, bullet_image=self.bullet_img, missle_image=self.missile_img)
-
+        self.player = player
         # Spawn {8} mobs
-        for i in range(8):   
+        for i in range(4):   
             self.create_mob(all_sprites, mobs)
 
         self.score = 0
         self.survival_sec = pygame.time.get_ticks()
+        self.result = 0
 
             
         all_sprites.add(player)
@@ -177,12 +207,9 @@ class SpaceShooterGame:
             if self.pause:
             # Pause the game until Esc is pressed
                 self.set_pause()
-                while True:
-                    event = pygame.event.wait()
-                    if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                        self.pause = False
-                        break
-
+                pygame.time.wait(1000)
+                self.pause = False
+            
             # Handle I/O
             clock.tick(constants.FPS)
             for event in pygame.event.get():        # gets all the events which have occured till now and keeps tab of them.
@@ -216,11 +243,11 @@ class SpaceShooterGame:
                 mobs.add(m)
                 expl = Explosion(hit.rect.center, 'lg', explosion_anim=self.explosion_anim)
                 all_sprites.add(expl)
-                if random.random() > 0.99:
+                if random.random() > 0.5:
                     pow = Pow(hit.rect.center, self.powerup_images)
                     all_sprites.add(pow)
                     powerups.add(pow)
-                    # newmob()        ## spawn a new mob
+                    # self.create_mob(all_sprites=all_sprites, mobs=mobs)      ## spawn a new mob
             
             # Handle player collision with mobs
             hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)        ## gives back a list, True makes the mob element disappear
@@ -270,9 +297,9 @@ class SpaceShooterGame:
 
             zone_width = 50
 
-            middle_rect = pygame.Rect(player.rect.x, 0, zone_width, constants.HEIGHT)
-            right_rect = pygame.Rect(player.rect.x + zone_width, 0, constants.WIDTH - player.rect.x - zone_width, constants.HEIGHT)
-            left_rect = pygame.Rect(0, 0, constants.WIDTH - (constants.WIDTH - player.rect.x), constants.HEIGHT)
+            middle_rect = pygame.Rect(player.rect.x, 200 , zone_width, constants.HEIGHT - 200)
+            right_rect = pygame.Rect(player.rect.x + zone_width, 200, zone_width*2, constants.HEIGHT - 200)
+            left_rect = pygame.Rect(player.rect.x - zone_width*2, 200, zone_width*2, constants.HEIGHT - 200)
 
             pygame.draw.rect(self.screen, (100, 100, 100), middle_rect, 1)
             pygame.draw.rect(self.screen, (100, 100, 100), right_rect, 1)
@@ -286,6 +313,12 @@ class SpaceShooterGame:
             left_powerup_count = self.count_items_in_rect(left_rect, powerups)
             middle_powerup_count = self.count_items_in_rect(middle_rect, powerups)
             right_powerup_count = self.count_items_in_rect(right_rect, powerups)
+
+            game_state_vector = [left_mob_count, 5 * left_powerup_count, middle_mob_count, -1 * middle_powerup_count, 5 * right_mob_count, right_powerup_count]
+            predict = self.nn.activate(game_state_vector)
+
+            self.make_move(predict)
+
 
             self.draw_text(str(left_mob_count), size=10, x=10, y=constants.HEIGHT // 2 , color=constants.RED)
             self.draw_text(str(middle_mob_count), size=10, x=middle_rect.x + 10, y=constants.HEIGHT // 2 , color=constants.RED)
@@ -301,12 +334,5 @@ class SpaceShooterGame:
         if self.game_over:
         # Pause the game until Esc is pressed
             self.set_game_over()
-            while True:
-                event = pygame.event.wait()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    self.running = False
-                    break
-                elif event.type == pygame.QUIT:
-                    self.running = False
-                    break
-        
+            pygame.time.wait(2000)
+            pygame.quit()
