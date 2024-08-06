@@ -202,8 +202,8 @@ class Player(pygame.sprite.Sprite):
 
         #  Add autofire
         # if keystate[pygame.K_SPACE]:
-        if keystate:
-            self.shoot()
+        # if keystate:
+        #     self.shoot()
 
         ## check for the borders at the left and right
         if self.rect.right > WIDTH:
@@ -373,7 +373,7 @@ player_mini_img = pygame.transform.scale(player_img, (25, 19))
 player_mini_img.set_colorkey(BLACK)
 bullet_img = pygame.image.load(path.join(img_dir, 'laserRed16.png')).convert()
 missile_img = pygame.image.load(path.join(img_dir, 'missile.png')).convert_alpha()
-# meteor_img = pygame.image.load(path.join(img_dir, 'meteorBrown_med1.png')).convert()
+meteor_img = pygame.image.load(path.join(img_dir, 'meteorBrown_med1.png')).convert()
 meteor_images = []
 meteor_list = [
     'meteorBrown_big1.png',
@@ -530,7 +530,7 @@ while running:
         mobs.add(m)
         expl = Explosion(hit.rect.center, 'lg')
         all_sprites.add(expl)
-        if random.random() > 0.9:
+        if random.random() > 1:
             pow = Pow(hit.rect.center)
             all_sprites.add(pow)
             powerups.add(pow)
@@ -566,10 +566,10 @@ while running:
             player.powerup()
 
     ## if player died and the explosion has finished, end game
-    # if player.lives == 0 and not death_explosion.alive():
-        # running = False
-        # menu_display = True
-        # pygame.display.update()
+    if player.lives == 0 and not death_explosion.alive():
+        running = False
+        menu_display = True 
+        pygame.display.update()
 
     #3 Draw/render
     screen.fill(BLACK)
@@ -615,11 +615,7 @@ while running:
     draw_rect_text(screen, str(left_powerup_count), (10, HEIGHT // 2 - 40), color=GREEN)
     draw_rect_text(screen, str(middle_powerup_count), (middle_rect.x + 10, HEIGHT // 2 - 40), color=GREEN)
     draw_rect_text(screen, str(right_powerup_count), (right_rect.x + 10, HEIGHT // 2 - 40), color=GREEN)
-    # draw_text(screen, f'Goods: {left_good_count}', (10, 40))
-    # draw_text(screen, f'Mobs: {middle_mob_count}', (middle_rect.x + 10, middle_rect.y + 10))
-    # # draw_text(screen, f'Goods: {middle_good_count}', (middle_rect.x + 10, middle_rect.y + 40))
-    # draw_text(screen, f'Mobs: {right_mob_count}', (right_rect.x + 10, right_rect.y + 10))
-    # draw_text(screen, f'Goods: {right_good_count}', (right_rect.x + 10, right_rect.y + 40))
+
 
 
     ## Done after drawing everything to the screen
@@ -628,3 +624,7 @@ while running:
 
 
 pygame.quit()
+
+
+
+    

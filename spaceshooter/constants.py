@@ -1,0 +1,15 @@
+# Constants
+WIDTH = 450
+HEIGHT = 600
+FPS = 60
+POWERUP_TIME = 5000
+BAR_LENGTH = 100
+BAR_HEIGHT = 10
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
