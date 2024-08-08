@@ -1,9 +1,12 @@
 from __future__ import division
 import pygame
-from pygame._sdl2.video import Window
 import random
 from os import path
 import numpy as np
+import os
+import shutil
+from PIL import Image
+import imageio
 
 
 from . import constants
@@ -18,7 +21,7 @@ def sigmoid(x):
     return sigmoid 
 
 class SpaceShooterGame:
-    def __init__(self, title, nn):
+    def __init__(self, title, nn, record_gameplay=False):
         self.screen_widht = constants.WIDTH
         self.screen_height = constants.HEIGHT
         self.title = title
@@ -30,7 +33,6 @@ class SpaceShooterGame:
         self.nn = nn
 
         self.img_dir = path.join(path.dirname(__file__), 'assets')
-        self.sound_folder = path.join(path.dirname(__file__), 'sounds')
 
         self.font_name = pygame.font.match_font('arial')
 
@@ -45,7 +47,8 @@ class SpaceShooterGame:
 
         self.previous_steps = []
         self.regularization = 0.5
-
+        self.record_gameplay = record_gameplay
+        self.frames = []
         
     def init_explosion_anim(self):
         self.explosion_anim = {}
@@ -134,7 +137,6 @@ class SpaceShooterGame:
         minutes = elapsed_seconds // 60
         seconds = elapsed_seconds % 60
 
-        self.result *= seconds // 10000
 
         self.screen.fill(constants.BLACK)
         self.draw_text("GAME OVER!", 40, constants.WIDTH/2, constants.HEIGHT/2)
@@ -151,18 +153,35 @@ class SpaceShooterGame:
         self.pause = False
     
     def make_move(self, predict):
+        player_position = self.player.rect.centerx
+        predict = np.array(predict)
 
-        if predict[0] > random.random():
-           decision = 1
+        # Adjust weights based on position
+        weights = np.ones_like(predict)
+
+        # Penalize movements towards borders
+        if player_position < 150:
+
+            self.result += 0.1
+        if player_position > 280:
+
+            self.result += 0.1
         else:
-           decision = -1
+            self.result += 1
+
+
+        # Recalculate probabilities with adjusted weights
+        adjusted_output = predict * weights
+        adjusted_output += 2 * np.random.rand(*adjusted_output.shape)
+        adjusted_output = adjusted_output / np.sum(adjusted_output)  # Normalize again
+
+        if adjusted_output[0] > adjusted_output[2]:
+            decision = -1
+        elif adjusted_output[2] > adjusted_output[0]:
+            decision = 1
+
 
         self.player.move(decision)
-        
-        if 50 < self.player.rect.centerx < 430:
-            self.result += 10
-        else:
-            self.result += 0.1
 
     def run_game(self):
         
@@ -172,7 +191,6 @@ class SpaceShooterGame:
 
         clock = pygame.time.Clock()
 
-        font_name = pygame.font.match_font('arial')
         self.player_img.convert()
         self.bullet_img.convert()
         self.missile_img.convert()
@@ -187,10 +205,16 @@ class SpaceShooterGame:
         bullets = pygame.sprite.Group()
         powerups = pygame.sprite.Group()
         mobs = pygame.sprite.Group()
-        player = Player(all_sprites=all_sprites, bullets=bullets, player_image=self.player_img, bullet_image=self.bullet_img, missle_image=self.missile_img)
+        player = Player( 
+            all_sprites=all_sprites, 
+            bullets=bullets, 
+            player_image=self.player_img, 
+            bullet_image=self.bullet_img, 
+            missle_image=self.missile_img
+        )
         self.player = player
-        # Spawn {8} mobs
-        for i in range(4):   
+        # Spawn {10} mobs
+        for i in range(10):   
             self.create_mob(all_sprites, mobs)
 
         self.score = 0
@@ -224,11 +248,6 @@ class SpaceShooterGame:
                     # Press p for pause
                     if event.key == pygame.K_p:
                         self.pause = True
-                ## event for shooting the bullets
-                # elif event.type == pygame.KEYDOWN:
-                #     if event.key == pygame.K_SPACE:
-                #         player.shoot() 
-            
             
             all_sprites.update()
 
@@ -282,8 +301,6 @@ class SpaceShooterGame:
             if player.lives == 0:
                 self.running = False
                 self.game_over = True
-                # self.quit()
-                # pygame.display.update()
 
             self.screen.fill(constants.BLACK)
 
@@ -297,9 +314,9 @@ class SpaceShooterGame:
 
             zone_width = 50
 
-            middle_rect = pygame.Rect(player.rect.x, 200 , zone_width, constants.HEIGHT - 200)
-            right_rect = pygame.Rect(player.rect.x + zone_width, 200, zone_width*2, constants.HEIGHT - 200)
-            left_rect = pygame.Rect(player.rect.x - zone_width*2, 200, zone_width*2, constants.HEIGHT - 200)
+            middle_rect = pygame.Rect(player.rect.x, 0 , zone_width, constants.HEIGHT)
+            right_rect = pygame.Rect(player.rect.x + zone_width, 0, 2*zone_width, constants.HEIGHT)
+            left_rect = pygame.Rect(player.rect.x - 2*zone_width, 0, 2*zone_width, constants.HEIGHT)
 
             pygame.draw.rect(self.screen, (100, 100, 100), middle_rect, 1)
             pygame.draw.rect(self.screen, (100, 100, 100), right_rect, 1)
@@ -314,25 +331,61 @@ class SpaceShooterGame:
             middle_powerup_count = self.count_items_in_rect(middle_rect, powerups)
             right_powerup_count = self.count_items_in_rect(right_rect, powerups)
 
-            game_state_vector = [left_mob_count, 5 * left_powerup_count, middle_mob_count, -1 * middle_powerup_count, 5 * right_mob_count, right_powerup_count]
+            game_state_vector = [
+                left_mob_count, 
+                5 * left_powerup_count, middle_mob_count,
+                -1 * middle_powerup_count,
+                right_mob_count, 
+                5 * right_powerup_count,
+                self.player.shield
+                ]
             predict = self.nn.activate(game_state_vector)
 
             self.make_move(predict)
 
 
-            self.draw_text(str(left_mob_count), size=10, x=10, y=constants.HEIGHT // 2 , color=constants.RED)
+            self.draw_text(str(left_mob_count), size=10, x=player.rect.x - 2*zone_width, y=constants.HEIGHT // 2 , color=constants.RED)
             self.draw_text(str(middle_mob_count), size=10, x=middle_rect.x + 10, y=constants.HEIGHT // 2 , color=constants.RED)
             self.draw_text(str(right_mob_count), size=10, x=right_rect.x + 10, y=constants.HEIGHT // 2 , color=constants.RED)
             
-            self.draw_text(str(left_powerup_count), size=10, x=10, y=constants.HEIGHT // 2 - 40 , color=constants.RED)
+            self.draw_text(str(left_powerup_count), size=10, x=player.rect.x - 2*zone_width, y=constants.HEIGHT // 2 - 40 , color=constants.RED)
             self.draw_text(str(middle_powerup_count), size=10, x=middle_rect.x + 10, y=constants.HEIGHT // 2 - 40 , color=constants.RED)
             self.draw_text(str(right_powerup_count), size=10, x=right_rect.x + 10, y=constants.HEIGHT // 2 - 40 , color=constants.RED)
 
             ## Done after drawing everything to the screen
             pygame.display.flip()  
 
+            if self.record_gameplay:
+                frame = pygame.surfarray.array3d(self.screen)
+                self.frames.append(frame)
+
         if self.game_over:
         # Pause the game until Esc is pressed
             self.set_game_over()
             pygame.time.wait(2000)
             pygame.quit()
+
+        
+    def frames_to_images(self):
+        print('Transforming frames to images ...')
+        if not os.path.exists('frames'):
+            os.mkdir('frames')
+        for i, frame in enumerate(self.frames):
+            img = Image.fromarray(np.transpose(frame, (1, 0, 2)))
+            img.save(f"frames/frame_{i}.png")
+        print('All frames transformed to images')
+
+
+    def images_to_gif(self):
+        print('Transforming images to gif ...')
+        png_dir = 'frames'
+        images = []
+        file_dir = sorted(os.listdir(png_dir), key=lambda x: int(x.split('_')[1][:-4]))
+        for file_name in file_dir:
+            if file_name.endswith('.png'):
+                file_path = os.path.join(png_dir, file_name)
+                images.append(imageio.imread(file_path))
+
+        imageio.mimsave('gameplay.gif', images, fps=60, loop=0)
+        print('GIF sucessfuly created')
+        shutil.rmtree('frames')

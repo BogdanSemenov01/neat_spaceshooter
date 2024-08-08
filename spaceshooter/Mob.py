@@ -3,24 +3,6 @@ import random
 from . import constants
 from os import path
 
-
-# img_dir = path.join(path.dirname(__file__), 'assets')
-# meteor_img = pygame.image.load(path.join(img_dir, 'meteorBrown_med1.png')).convert()
-# meteor_images = []
-# meteor_list = [
-#     'meteorBrown_big1.png',
-#     'meteorBrown_big2.png', 
-#     'meteorBrown_med1.png', 
-#     'meteorBrown_med3.png',
-#     'meteorBrown_small1.png',
-#     'meteorBrown_small2.png',
-#     'meteorBrown_tiny1.png'
-# ]
-
-# for image in meteor_list:
-#     meteor_images.append(pygame.image.load(path.join(img_dir, image)).convert())
-
-
 class Mob(pygame.sprite.Sprite):
     def __init__(self, meteor_images):
         pygame.sprite.Sprite.__init__(self)
@@ -31,7 +13,7 @@ class Mob(pygame.sprite.Sprite):
         self.radius = int(self.rect.width *.90 / 2)
         self.rect.x = random.randrange(0, constants.WIDTH - self.rect.width)
         self.rect.y = random.randrange(-150, -100)
-        self.speedy = random.randrange(5, 20)        ## for randomizing the speed of the Mob
+        self.speedy = random.randrange(5, 20)        
 
         ## randomize the movements a little more 
         self.speedx = random.randrange(-3, 3)

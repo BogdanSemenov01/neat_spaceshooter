@@ -25,7 +25,7 @@ class Player(pygame.sprite.Sprite):
         self.power = 1
         self.power_timer = pygame.time.get_ticks()
 
-        self.move_delay = 500
+        self.move_delay = 10
         self.last_move = pygame.time.get_ticks()
 
         self.all_sprites = all_sprites
@@ -110,6 +110,7 @@ class Player(pygame.sprite.Sprite):
     def move(self, direction):
         now = pygame.time.get_ticks()
         if now - self.last_move > self.move_delay:
+            self.last_move = now
             self.rect.centerx += direction * 5
 
 
@@ -132,9 +133,7 @@ class Bullet(pygame.sprite.Sprite):
         if self.rect.bottom < 0:
             self.kill()
 
-        ## now we need a way to shoot
-        ## lets bind it to "spacebar".
-        ## adding an event for it in Game loop
+
 
 
 class Missile(pygame.sprite.Sprite):
